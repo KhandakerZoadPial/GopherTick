@@ -13,7 +13,7 @@ The system is designed to ingest data from multiple asynchronous sources at 100m
 
 ## Performance Benchmarks (Intel MacBook Pro)
 
-Using the internal `cmd/loadtest` tool, the following metrics were captured during a high-stress run:
+Using the internal `cmd/loadtest` tool(I generated this test script using AI), the following metrics were captured during a high-stress run:
 
 *   **Peak Throughput:** 361,752 messages per second.
 *   **Total Data Delivered:** 10.8 Million JSON packets in 30 seconds.
