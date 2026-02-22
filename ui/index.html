@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>GopherTick | Real-Time Dashboard</title>
+    <style>
+        body {
+            background-color: #0d1117;
+            color: #c9d1d9;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 50px;
+        }
+        h1 { color: #58a6ff; margin-bottom: 5px; }
+        .subtitle { color: #8b949e; margin-bottom: 30px; font-size: 0.9em; }
+        
+        table {
+            border-collapse: collapse;
+            width: 90%;
+            max-width: 700px;
+            background-color: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+        }
+        
+        th {
+            background-color: #21262d;
+            color: #8b949e;
+            text-transform: uppercase;
+            font-size: 11px;
+            padding: 12px 20px;
+            text-align: left;
+            letter-spacing: 1px;
+        }
+
+        td {
+            padding: 15px 20px;
+            border-bottom: 1px solid #30363d;
+            font-size: 1.1em;
+        }
+
+        .symbol { font-weight: 600; color: #f0f6fc; }
+
+        .price { 
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; 
+            font-weight: bold; 
+            transition: color 0.3s ease;
+        }
+        
+        /* Flash colors */
+        .up { color: #3fb950; }
+        .down { color: #f851red; }
+        .neutral { color: #c9d1d9; }
+        
+        .timestamp { color: #8b949e; font-size: 0.85em; }
+        .status-bar { margin-top: 20px; font-size: 0.8em; color: #3fb950; }
+    </style>
+</head>
+<body>
+
+    <h1>GopherTick</h1>
+    <div class="subtitle">High-Frequency Real-Time Price Aggregator</div>
+
+    <table id="ticker-table">
+        <thead>
+            <tr>
+                <th>Asset Source</th>
+                <th>Price (USD)</th>
+                <th>Last Update</th>
+            </tr>
+        </thead>
+        <tbody id="ticker-body">
+            <!-- Data will be injected here -->
+        </tbody>
+    </table>
+
+    <div class="status-bar" id="status">● System Live</div>
+
+    <script>
+        const tickerBody = document.getElementById('ticker-body');
+        const lastPrices = {};
+
+        // 1. Connect to your Go WebSocket
+        const socket = new WebSocket("ws://localhost:8080/ws");
+
+        socket.onmessage = function(event) {
+            // DEBUG: Uncomment the next line to see the raw data in your browser console
+            // console.log("Received:", event.data);
+
+            const data = JSON.parse(event.data);
+            
+            // 2. Map JSON keys to variables
+            // These must match your Go struct tags exactly!
+            const symbol = data.provider_name; 
+            const price = data.current_price;
+            const timestamp = data.timestamp;
+
+            updateUI(symbol, price, timestamp);
+        };
+
+        function updateUI(symbol, price, timestamp) {
+            const timeStr = new Date(timestamp).toLocaleTimeString();
+            let row = document.getElementById(`row-${symbol}`);
+
+            // Create row if it doesn't exist
+            if (!row) {
+                row = document.createElement('tr');
+                row.id = `row-${symbol}`;
+                row.innerHTML = `
+                    <td class="symbol">${symbol}</td>
+                    <td class="price" id="price-${symbol}">$0.0000</td>
+                    <td class="timestamp" id="time-${symbol}">-</td>
+                `;
+                tickerBody.appendChild(row);
+            }
+
+            const priceEl = document.getElementById(`price-${symbol}`);
+            const timeEl = document.getElementById(`time-${symbol}`);
+
+            // 3. Logic for Green/Red flash
+            if (lastPrices[symbol]) {
+                if (price > lastPrices[symbol]) {
+                    priceEl.className = "price up";
+                } else if (price < lastPrices[symbol]) {
+                    priceEl.className = "price down";
+                }
+            }
+
+            // 4. Update text content
+            // toFixed(4) ensures we don't crash if price is undefined
+            priceEl.innerText = `$${parseFloat(price).toFixed(4)}`;
+            timeEl.innerText = timeStr;
+
+            // Save for next comparison
+            lastPrices[symbol] = price;
+        }
+
+        socket.onerror = (error) => console.error("WS Error:", error);
+        socket.onclose = () => {
+            document.getElementById('status').innerText = "○ Disconnected";
+            document.getElementById('status').style.color = "red";
+        };
+    </script>
+</body>
+</html>
