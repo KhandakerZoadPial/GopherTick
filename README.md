@@ -4,7 +4,7 @@
 GopherTick is a high-frequency data aggregator and real-time broadcaster I built to explore the limits of Go's concurrency model. The project focuses on the "Broadcast Problem": how to ingest multiple high-speed data streams and push them to thousands of users simultaneously without the system locking up.
 
 ## The Motivation
-Coming from a Python and Django background, I was used to frameworks that handle the heavy lifting for you. However, those frameworks often struggle with "chatty" I/O—scenarios where data updates 10-20 times per second. Scaling that in Python usually requires a complex stack of Redis, Celery, and multiple load balancers.
+Coming from a Python and Django background, I was used to frameworks that handle the heavy lifting for you. However, those frameworks often struggle with "chatty" I/O scenarios where data updates 10-20 times per second. Scaling that in Python usually requires a complex stack of Redis, Celery, and multiple load balancers.
 
 I wanted to see if I could achieve better results using only Go's native primitives (Goroutines and Channels) running on a single, consumer-grade machine.
 
@@ -15,7 +15,7 @@ The system is built on a "Fan-In/Fan-Out" design:
 *   **Slow-Consumer Protection:** This was a critical architectural lesson. I implemented a non-blocking `select/default` pattern for broadcasts. If a user’s network is slow and their buffer fills up, the system drops their specific packet instead of making the entire server wait. This ensures the stream remains "real-time" for healthy clients.
 
 ## The Performance Curve (Intel MacBook Pro)
-I didn't just want to see it work; I wanted to see it break. I built a custom, rate-limited load-testing tool (`cmd/loadtest`) to profile the system across different scales. These results were captured on a 4-core Intel MacBook Pro.
+I didn't just want to see it work; I wanted to see it break. I built a custom, rate-limited load-testing tool with the help of AI (`cmd/loadtest`) to profile the system across different scales. These results were captured on a 4-core Intel MacBook Pro.
 
 | Connections | Avg Handshake Latency | Peak Throughput | Verdict |
 | :--- | :--- | :--- | :--- |
